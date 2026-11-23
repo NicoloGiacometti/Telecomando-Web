@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Telecomando LG</title>
+<style>
+:root{--bg:#f4f4f6;--fg:#1c1c1e;--card:#fff;--btn:#e6e6ea;--acc:#a50034;--mut:#6b6b70}
+@media(prefers-color-scheme:dark){:root{--bg:#161618;--fg:#f2f2f4;--card:#232326;--btn:#34343a;--mut:#9a9aa0}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px system-ui,sans-serif;display:flex;justify-content:center}
+main{width:100%;max-width:420px;padding:16px 16px 40px}
+.card{background:var(--card);border-radius:16px;padding:14px;margin-bottom:12px}
+.row{display:flex;gap:8px;margin-bottom:8px}.row:last-child{margin-bottom:0}
+button{flex:1;padding:14px 0;border:0;border-radius:12px;background:var(--btn);color:var(--fg);font-size:16px;min-width:0;touch-action:manipulation}
+button:active{filter:brightness(.8)}button.acc{background:var(--acc);color:#fff}
+button.sm{flex:0 0 auto;padding:10px 14px;font-size:14px}
+select,input{width:100%;padding:11px;border-radius:10px;border:1px solid var(--btn);background:var(--card);color:var(--fg);font-size:16px;min-width:0}
+input[type=range]{padding:0;border:0}
+#st{font-size:14px;color:var(--mut);margin-bottom:10px;min-height:1.2em}
+#err{font-size:14px;color:var(--acc);margin-bottom:10px}
+h2{font-size:13px;margin:0 0 10px;color:var(--mut);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+p.hint{font-size:14px;color:var(--mut);margin:0 0 10px;line-height:1.4}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.c-red{background:#d33;color:#fff}.c-green{background:#2a2;color:#fff}.c-yellow{background:#db2;color:#222}.c-blue{background:#36c;color:#fff}
+#pad{height:200px;border-radius:12px;background:var(--btn);touch-action:none;display:flex;align-items:center;justify-content:center;color:var(--mut);font-size:13px;user-select:none;-webkit-user-select:none;text-align:center;padding:12px}
+.hide{display:none!important}
+</style></head><body><main>
+<div id="st">Avvio…</div>
+<div id="err"></div>
+
+<div class="card" id="setup">
+  <h2>TV LG</h2>
+  <div class="row"><button class="acc" id="searchbtn" onclick="search()">Cerca la TV</button></div>
+  <div id="certbox" class="hide">
+    <p class="hint">TV non trovata. Controlla che sia accesa e sullo stesso Wi-Fi del telefono.<br><b>Prima volta su questo telefono?</b> Serve un passaggio una tantum: tocca il pulsante qui sotto, nella pagina di avviso scegli <b>Avanzate → Procedi</b>, poi torna qui: la ricerca riparte da sola.</p>
+    <div class="row"><button class="acc" onclick="openCert(CANDIDATES[0])">Primo collegamento</button></div>
+  </div>
+  <details style="margin-top:10px"><summary class="hint" style="margin:0">Inserisci nome o IP a mano</summary>
+    <div class="row" style="margin-top:8px"><input id="host" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="es. LGwebOSTV oppure 192.168.1.50"><button class="sm" onclick="connectTo($('host').value.trim())">Collega</button></div>
+    <div class="row"><button class="sm" onclick="openCert($('host').value.trim())">Accetta il certificato di questo indirizzo</button></div>
+  </details>
+  <p class="hint" id="pairhint" style="display:none;margin-top:10px">Sulla TV compare una richiesta: accettala con il telecomando fisico.</p>
+</div>
+
+<div id="remote" class="hide">
+<div class="card">
+  <div class="grid3">
+    <span></span><button onclick="k('UP')">▲</button><span></span>
+    <button onclick="k('LEFT')">◀</button><button class="acc" onclick="k('ENTER')">OK</button><button onclick="k('RIGHT')">▶</button>
+    <span></span><button onclick="k('DOWN')">▼</button><span></span>
+  </div>
+  <div class="row" style="margin-top:8px"><button onclick="k('BACK')">Indietro</button><button onclick="k('HOME')">Home</button><button onclick="k('MENU')">Menu</button></div>
+  <div class="row"><button onclick="k('EXIT')">Esci</button><button onclick="k('INFO')">Info</button><button onclick="k('GUIDE')">Guida</button></div>
+</div>
+
+<div class="card">
+  <div class="row"><button onclick="k('VOLDOWN')">Vol −</button><button onclick="k('MUTE')">Muto</button><button onclick="k('VOLUP')">Vol +</button></div>
+  <div class="row"><input type="range" id="vol" min="0" max="100" onchange="req('ssap://audio/setVolume',{volume:+this.value})"></div>
+  <div class="row"><button onclick="k('CHDOWN')">CH −</button><button onclick="k('CHUP')">CH +</button></div>
+</div>
+
+<div class="card">
+  <div class="row"><button onclick="k('REW')">⏪</button><button onclick="k('PLAY')">▶</button><button onclick="k('PAUSE')">⏸</button><button onclick="k('STOP')">⏹</button><button onclick="k('FF')">⏩</button></div>
+</div>
+
+<div class="card">
+  <h2>Puntatore</h2>
+  <div id="pad">Trascina per muovere · tocca per cliccare · due dita per scorrere</div>
+</div>
+
+<div class="card">
+  <div class="grid3">
+    <button onclick="k('1')">1</button><button onclick="k('2')">2</button><button onclick="k('3')">3</button>
+    <button onclick="k('4')">4</button><button onclick="k('5')">5</button><button onclick="k('6')">6</button>
+    <button onclick="k('7')">7</button><button onclick="k('8')">8</button><button onclick="k('9')">9</button>
+    <span></span><button onclick="k('0')">0</button><span></span>
+  </div>
+  <div class="row" style="margin-top:8px"><button class="c-red" onclick="k('RED')">&nbsp;</button><button class="c-green" onclick="k('GREEN')">&nbsp;</button><button class="c-yellow" onclick="k('YELLOW')">&nbsp;</button><button class="c-blue" onclick="k('BLUE')">&nbsp;</button></div>
+</div>
+
+<div class="card">
+  <div class="row"><select id="apps"><option value="">App…</option></select><button class="sm" onclick="apps.value&&req('ssap://system.launcher/launch',{id:apps.value})">Apri</button></div>
+  <div class="row"><select id="inputs"><option value="">Ingressi…</option></select><button class="sm" onclick="inputs.value&&req('ssap://tv/switchInput',{inputId:inputs.value})">Vai</button></div>
+  <div class="row"><button class="sm" onclick="loadLists()">Aggiorna elenchi</button></div>
+</div>
+
+<div class="card">
+  <h2>Testo</h2>
+  <div class="row"><input id="txt" placeholder="Scrivi nel campo attivo sulla TV"><button class="sm" onclick="sendText()">Invia</button></div>
+  <div class="row"><button onclick="req('ssap://com.webos.service.ime/sendEnterKey')">Invio</button><button onclick="req('ssap://com.webos.service.ime/deleteCharacters',{count:1})">⌫ Cancella</button></div>
+</div>
+
+<div class="card">
+  <div class="row"><button onclick="req('ssap://com.webos.service.tvpower/power/turnOffScreen')">Schermo off</button><button onclick="req('ssap://com.webos.service.tvpower/power/turnOnScreen')">Schermo on</button></div>
+  <div class="row"><button onclick="if(confirm('Spegnere la TV? Da qui non si può riaccendere.'))req('ssap://system/turnOff')">Spegni</button><button onclick="disconnect()">Scollega</button></div>
+</div>
+</div>
+</main>
+<script>
+// Gira con origine "null" (iframe isolato): niente localStorage, i dati li salva la pagina esterna.
+const $=id=>document.getElementById(id);
+const MANIFEST={manifestVersion:1,permissions:['LAUNCH','LAUNCH_WEBAPP','APP_TO_APP','CLOSE','TEST_OPEN','TEST_PROTECTED','CONTROL_AUDIO','CONTROL_DISPLAY',
+  'CONTROL_INPUT_JOYSTICK','CONTROL_INPUT_MEDIA_RECORDING','CONTROL_INPUT_MEDIA_PLAYBACK','CONTROL_INPUT_TV','CONTROL_POWER',
+  'CONTROL_INPUT_TEXT','CONTROL_MOUSE_AND_KEYBOARD','READ_APP_STATUS','READ_CURRENT_CHANNEL','READ_INPUT_DEVICE_LIST',
+  'READ_NETWORK_STATE','READ_RUNNING_APPS','READ_TV_CHANNEL_LIST','WRITE_NOTIFICATION_TOAST','READ_POWER_STATE',
+  'READ_COUNTRY_INFO','READ_INSTALLED_APPS','READ_UPDATE_INFO']};
+const POINTER_KEYS=new Set(['UP','DOWN','LEFT','RIGHT','ENTER','BACK','HOME','MENU','EXIT','INFO','GUIDE','RED','GREEN','YELLOW','BLUE',...'0123456789']);
+const SSAP_KEYS={VOLUP:'ssap://audio/volumeUp',VOLDOWN:'ssap://audio/volumeDown',CHUP:'ssap://tv/channelUp',CHDOWN:'ssap://tv/channelDown',
+  PLAY:'ssap://media.controls/play',PAUSE:'ssap://media.controls/pause',STOP:'ssap://media.controls/stop',REW:'ssap://media.controls/rewind',FF:'ssap://media.controls/fastForward'};
+
+let config={},ws=null,pointer=null,pointerP=null,state='idle',info={},msgId=0,retryTimer=null,wanted=false,host='',searching=false;
+const pending=new Map();
+const save=c=>parent.postMessage({type:'save',config:c},'*');
+let errTimer;
+function showErr(m){err.textContent=m;clearTimeout(errTimer);errTimer=setTimeout(()=>err.textContent='',6000)}
+
+// Nomi con cui il router di casa pubblica la TV: restano validi anche quando cambia l'IP.
+// Il primo e' quello del router TIM di casa; gli altri coprono i router piu' comuni.
+const CANDIDATES=['lgwebostv.homenet.telecomitalia.it','LGwebOSTV','lgwebostv.local','lgwebostv.lan','lgwebostv.home','lgwebostv.fritz.box','lgwebostv.station'];
+
+function render(){
+  const T={idle:'Premi "Cerca la TV"',searching:'Cerco la TV in rete…',connecting:'Connessione…',pairing:'Pairing…','waiting-approval':'Accetta la richiesta sulla TV',
+    connected:'Connesso',cert:'TV non trovata',denied:'Pairing rifiutato: premi "Cerca la TV" per riprovare',lost:'Connessione persa: riprovo…'};
+  let t=(host&&!['idle','searching','cert'].includes(state)?`TV ${host}: `:'')+(T[state]||state);
+  if(state==='connected'&&info.volume!=null)t+=` · vol ${info.volume}${info.muted?' (muto)':''}`;
+  if(state==='connected'&&info.app)t+=` · ${info.app}`;
+  st.textContent=t;
+  $('setup').classList.toggle('hide',state==='connected');
+  $('remote').classList.toggle('hide',state!=='connected');
+  $('certbox').classList.toggle('hide',state!=='cert');
+  $('pairhint').style.display=state==='waiting-approval'?'':'none';
+  searchbtn.disabled=state==='searching';searchbtn.textContent=state==='searching'?'Ricerca in corso…':'Cerca la TV';
+  if(document.activeElement!==vol&&info.volume!=null)vol.value=info.volume;
+}
+
+const validHost=h=>h.length<=253&&/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$/i.test(h);
+function openCert(h){if(!validHost(h||''))return showErr('Nome o IP non valido');window.open(`https://${h}:3001/`,'_blank')}
+
+// Prova un indirizzo: risponde solo se e' una TV LG e il certificato e' gia' stato accettato.
+function probe(h){
+  return new Promise(res=>{
+    let s;try{s=new WebSocket(`wss://${h}:3001`)}catch{return res(null)}
+    const t=setTimeout(()=>{try{s.close()}catch{};res(null)},5000);
+    s.onopen=()=>{clearTimeout(t);s.close();res(h)};
+    s.onerror=()=>{clearTimeout(t);res(null)};
+  });
+}
+async function search(){
+  if(searching)return;
+  searching=true;wanted=false;clearTimeout(retryTimer);closeSockets();state='searching';render();
+  const list=[...new Set([config.host,...CANDIDATES].filter(Boolean))];
+  const found=await new Promise(res=>{let left=list.length;list.forEach(h=>probe(h).then(r=>{if(r)res(r);else if(--left===0)res(null)}))});
+  searching=false;
+  if(found)return connectTo(found);
+  state='cert';render();
+}
+
+function connectTo(h){
+  if(!validHost(h||''))return showErr('Nome o IP non valido');
+  host=h;config.host=h;save({host:h});$('host').value=h;
+  wanted=true;clearTimeout(retryTimer);closeSockets();
+  open(h);
+}
+function disconnect(){wanted=false;clearTimeout(retryTimer);closeSockets();state='idle';render()}
+function closeSockets(){
+  const old=ws;ws=null;try{old&&old.close()}catch{}
+  try{pointer&&pointer.close()}catch{};pointer=null;
+  for(const p of pending.values()){clearTimeout(p.timer);p.reject(new Error('scollegato'))}pending.clear();
+}
+
+function open(h){
+  state='connecting';render();
+  let opened=false;
+  const s=ws=new WebSocket(`wss://${h}:3001`);
+  setTimeout(()=>{if(!opened&&s===ws)s.close()},6000);   // TV spenta o indirizzo sbagliato: non aspettare il timeout del sistema
+  s.onopen=()=>{
+    opened=true;state='pairing';render();
+    const key=(config.keys||{})[h]||(config.keys||{})._last;
+    s.send(JSON.stringify({type:'register',id:'reg',payload:{forcePairing:false,pairingType:'PROMPT','client-key':key||undefined,manifest:MANIFEST}}));
+  };
+  s.onmessage=e=>{try{onMessage(JSON.parse(e.data),h)}catch{}};
+  s.onclose=()=>{
+    if(s!==ws)return;
+    ws=null;pointer=null;
+    if(state==='denied')return render();
+    if(!opened){wanted=false;return search()}           // l'indirizzo non risponde piu': cerco di nuovo
+    state='lost';render();
+    if(wanted)retryTimer=setTimeout(()=>open(h),4000);
+  };
+}
+
+function onMessage(m,h){
+  if(m.id==='reg'){
+    if(m.type==='response'&&m.payload&&m.payload.pairingType){state='waiting-approval'}
+    else if(m.type==='registered'){
+      const key=m.payload['client-key'];config.keys={...(config.keys||{}),[h]:key,_last:key};save({keys:{[h]:key,_last:key}});
+      state='connected';subscribe();loadLists();
+    }else if(m.type==='error'){state='denied';showErr(m.error||'pairing rifiutato');ws&&ws.close()}
+    return render();
+  }
+  const p=pending.get(m.id);
+  if(p&&(m.type==='response'||m.type==='error')){
+    pending.delete(m.id);clearTimeout(p.timer);
+    if(m.type==='error'||(m.payload&&m.payload.returnValue===false))p.reject(new Error(m.error||m.payload&&m.payload.errorText||'errore dalla TV'));
+    else p.resolve(m.payload||{});
+  }
+  const pl=m.payload;if(!pl)return;
+  if(m.id==='sub-vol'){const v=pl.volumeStatus||pl;if(v.volume!==undefined)info.volume=v.volume;if(v.muteStatus!==undefined)info.muted=v.muteStatus;else if(v.muted!==undefined)info.muted=v.muted;render()}
+  if(m.id==='sub-app'&&pl.appId!==undefined){info.app=pl.appId;render()}
+}
+
+function subscribe(){
+  ws.send(JSON.stringify({type:'subscribe',id:'sub-vol',uri:'ssap://audio/getVolume'}));
+  ws.send(JSON.stringify({type:'subscribe',id:'sub-app',uri:'ssap://com.webos.applicationManager/getForegroundAppInfo'}));
+}
+
+function request(uri,payload){
+  return new Promise((resolve,reject)=>{
+    if(state!=='connected'||!ws)return reject(new Error('TV non connessa'));
+    const id='r'+(++msgId);
+    const timer=setTimeout(()=>{if(pending.delete(id))reject(new Error('la TV non ha risposto'))},8000);
+    pending.set(id,{resolve,reject,timer});
+    ws.send(JSON.stringify({type:'request',id,uri,payload}));
+  });
+}
+const req=(uri,payload)=>request(uri,payload).catch(e=>{showErr(e.message);return null});
+
+function getPointer(){
+  if(pointer&&pointer.readyState===1)return Promise.resolve(pointer);
+  return pointerP||(pointerP=(async()=>{
+    const r=await request('ssap://com.webos.service.networkinput/getPointerInputSocket');
+    const s=new WebSocket(r.socketPath);
+    await new Promise((res,rej)=>{s.onopen=res;s.onerror=()=>rej(new Error('socket puntatore non disponibile'))});
+    s.onclose=()=>{if(pointer===s)pointer=null};
+    return pointer=s;
+  })().finally(()=>{pointerP=null}));
+}
+const pointerSend=t=>getPointer().then(s=>s.send(t+'\n\n')).catch(e=>showErr(e.message));
+
+function k(name){
+  if(navigator.vibrate)navigator.vibrate(10);
+  if(SSAP_KEYS[name])return req(SSAP_KEYS[name]);
+  if(name==='MUTE')return req('ssap://audio/setMute',{mute:!info.muted});
+  if(POINTER_KEYS.has(name))return pointerSend(`type:button\nname:${name}`);
+}
+function sendText(){const t=txt.value;if(!t)return;req('ssap://com.webos.service.ime/insertText',{text:t,replace:0}).then(r=>{if(r)txt.value=''})}
+
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function fill(sel,items,ph){sel.innerHTML=`<option value="">${ph}</option>`+items.map(x=>`<option value="${esc(x.id)}">${esc(x.label)}</option>`).join('')}
+async function loadLists(){
+  const a=await request('ssap://com.webos.applicationManager/listLaunchPoints').catch(()=>null);
+  fill(apps,a?(a.launchPoints||[]).map(x=>({id:x.id,label:x.title})).sort((x,y)=>x.label.localeCompare(y.label)):[],a?'App…':'App non disponibili');
+  const i=await request('ssap://tv/getExternalInputList').catch(()=>null);
+  fill(inputs,i?(i.devices||[]).map(d=>({id:d.id,label:d.label})):[],i?'Ingressi…':'Ingressi non disponibili');
+}
+
+// Touchpad: un dito muove e tocca, due dita scorrono.
+const pts=new Map();let acc={dx:0,dy:0},moved=0,scrollAcc=0;
+pad.addEventListener('pointerdown',e=>{pts.set(e.pointerId,{x:e.clientX,y:e.clientY});moved=0;pad.setPointerCapture(e.pointerId)});
+pad.addEventListener('pointermove',e=>{
+  const p=pts.get(e.pointerId);if(!p)return;
+  const dx=e.clientX-p.x,dy=e.clientY-p.y;pts.set(e.pointerId,{x:e.clientX,y:e.clientY});moved+=Math.abs(dx)+Math.abs(dy);
+  if(pts.size>1)scrollAcc+=dy/pts.size;else{acc.dx+=dx*1.8;acc.dy+=dy*1.8}
+});
+const up=e=>{if(pts.size===1&&moved<8)pointerSend('type:click');pts.delete(e.pointerId)};
+pad.addEventListener('pointerup',up);pad.addEventListener('pointercancel',e=>pts.delete(e.pointerId));
+pad.addEventListener('wheel',e=>{e.preventDefault();pointerSend(`type:scroll\ndx:0\ndy:${Math.sign(e.deltaY)*-3}`)},{passive:false});
+setInterval(()=>{
+  if(acc.dx||acc.dy){const dx=Math.round(acc.dx),dy=Math.round(acc.dy);acc={dx:0,dy:0};if(dx||dy)pointerSend(`type:move\ndx:${Math.max(-200,Math.min(200,dx))}\ndy:${Math.max(-200,Math.min(200,dy))}\ndown:0`)}
+  if(Math.abs(scrollAcc)>=10){const n=Math.round(-scrollAcc/10);scrollAcc=0;pointerSend(`type:scroll\ndx:0\ndy:${Math.max(-50,Math.min(50,n))}`)}
+},50);
+
+// Configurazione dalla pagina esterna (accetta messaggi solo dal genitore).
+addEventListener('message',e=>{
+  if(e.source!==parent||!e.data||e.data.type!=='config')return;
+  config=e.data.config||{};
+  if(state==='idle'){if(config.host)connectTo(config.host);else search()}
+  render();
+});
+// Rientrando nell'app dopo che il telefono l'ha sospesa, ricollega.
+// Tornando nella pagina (dopo aver accettato il certificato o dopo la sospensione del telefono) riprovo da solo.
+document.addEventListener('visibilitychange',()=>{if(document.hidden||searching||ws)return;if(state==='cert')search();else if(wanted){clearTimeout(retryTimer);open(host)}});
+render();
+parent.postMessage({type:'ready'},'*');
+</script></body></html>

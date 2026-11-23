@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="it"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#161618">
+<link rel="manifest" href="manifest.json">
+<title>Telecomando LG</title>
+<style>html,body{margin:0;height:100%;background:#161618}iframe{border:0;width:100%;height:100%;display:block}</style>
+</head><body>
+<!--
+  Il telecomando gira in un iframe isolato (sandbox senza allow-same-origin):
+  la TV LG ignora le connessioni che arrivano da un sito web, ma accetta quelle
+  con origine "null", che e' proprio l'origine di un iframe isolato.
+  Questa pagina esterna conserva solo IP e chiave di pairing nel telefono.
+-->
+<iframe id="app" src="app.html" sandbox="allow-scripts allow-modals allow-popups allow-popups-to-escape-sandbox"></iframe>
+<script>
+const app = document.getElementById('app');
+const KEY = 'lgremote';
+const load = () => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch { return {}; } };
+const save = (o) => { try { localStorage.setItem(KEY, JSON.stringify(o)); } catch {} };
+addEventListener('message', (e) => {
+  if (e.source !== app.contentWindow) return;
+  const m = e.data || {};
+  if (m.type === 'ready') app.contentWindow.postMessage({ type: 'config', config: load() }, '*');
+  if (m.type === 'save' && m.config && typeof m.config === 'object') {
+    const c = load();
+    if (typeof m.config.host === 'string') c.host = m.config.host.slice(0, 253);
+    if (m.config.keys && typeof m.config.keys === 'object') c.keys = { ...(c.keys || {}), ...m.config.keys };
+    save(c);
+  }
+});
+</script>
+</body></html>

@@ -1,0 +1,8 @@
+{
+  "name": "Telecomando LG",
+  "short_name": "Telecomando",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#161618",
+  "theme_color": "#161618"
+}
